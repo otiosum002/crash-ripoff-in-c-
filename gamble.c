@@ -4,32 +4,38 @@
 #include <time.h>
 
 #define MAX_USERS 100
-#define USERNAME_LENGTH 50
-#define PASSWORD_LENGTH 50
+#define UNAME_LEN 50
+#define PASS_LEN 50
 
 typedef struct
 {
-    char username[USERNAME_LENGTH];
-    char password[PASSWORD_LENGTH];
+    char uname[UNAME_LEN];
+    char pass[PASS_LEN];
     float balance;
-    float total_earnings;
-    float total_losses;
+    float earnings;
+    float losses;
 } User;
 
-// prototypes
-int register_user(User *users, int *user_count);
-int login_user(User *users, int user_count);
-float generate_random_multiplier();
-void play_game(User *user);
-void save_users(User *users, int user_count);
-int load_users(User *users);
+// func prototypes
+int reg_usr(User *u, int *c);
+int login_usr(User *u, int c);
+float gen_mult();
+void play_game(User *u);
+void save_usr(User *u, int c);
+int load_usr(User *u);
+void chat_resp();
+void show_guide();
+void show_strat();
+void show_strat1();
+void show_strat2();
+void show_strat3();
 
 int main(void)
 {
-    srand(time(NULL)); // seed the random number generator
-    User users[MAX_USERS];
-    int user_count = load_users(users); // load users from file
-    int logged_in_user_index = -1;
+    srand(time(NULL)); // seed RNG
+    User u[MAX_USERS];
+    int c = load_usr(u); // load users from file
+    int logged_in_idx = -1;
     int choice;
 
     while (1)
@@ -37,201 +43,265 @@ int main(void)
         printf("\n1. Register\n");
         printf("2. Login\n");
         printf("3. Exit\n");
-        printf("Choose an option: ");
+        printf("4. Guide\n");
+        printf("5. Strategy\n");
+        printf("choose an option: ");
         scanf("%d", &choice);
 
         switch (choice)
         {
         case 1:
-            register_user(users, &user_count); // registering user
+            reg_usr(u, &c); // register user
             break;
         case 2:
-            logged_in_user_index = login_user(users, user_count);
-            if (logged_in_user_index != -1)
+            logged_in_idx = login_usr(u, c);
+            if (logged_in_idx != -1)
             {
-                play_game(&users[logged_in_user_index]); // playing the game
+                play_game(&u[logged_in_idx]); // start game
             }
             break;
         case 3:
-            save_users(users, user_count); // saving user to the file
-            printf("Had fun? :)\n");
+            save_usr(u, c); // save users
+            printf("had fun? :)\n");
             return 0;
+        case 4:
+            show_guide(); // show guide
+            break;
+        case 5:
+            show_strat(); // show strategy
+            break;
         default:
-            printf("Invalid option. Please try again.\n");
+            printf("invalid option. try again.\n");
         }
     }
 }
 
-int register_user(User *users, int *user_count)
+int reg_usr(User *u, int *c)
 {
-    if (*user_count >= MAX_USERS)
+    if (*c >= MAX_USERS)
     {
-        printf("User  limit reached.\n");
+        printf("user limit hit.\n");
         return 0;
     }
 
-    User new_user;
-    printf("Enter username: ");
-    scanf("%s", new_user.username);
-    printf("Enter password: ");
-    scanf("%s", new_user.password);
+    User new_usr;
+    printf("enter username: ");
+    scanf("%s", new_usr.uname);
+    printf("enter password: ");
+    scanf("%s", new_usr.pass);
 
-    new_user.balance = 10000.0;
-    new_user.total_earnings = 0.0;
-    new_user.total_losses = 0.0;
+    new_usr.balance = 10000.0;
+    new_usr.earnings = 0.0;
+    new_usr.losses = 0.0;
 
-    users[*user_count] = new_user;
-    (*user_count)++;
+    u[*c] = new_usr;
+    (*c)++;
 
-    printf("Registration complete. Your initial balance is $%.2f\n", new_user.balance);
+    printf("reg complete. initial balance: $%.2f\n", new_usr.balance);
     return 1;
 }
 
-int login_user(User *users, int user_count)
+int login_usr(User *u, int c)
 {
-    char username[USERNAME_LENGTH];
-    char password[PASSWORD_LENGTH];
+    char uname[UNAME_LEN];
+    char pass[PASS_LEN];
     int choice;
 
-    printf("Enter username: ");
-    scanf("%s", username);
-    printf("Enter password: ");
-    scanf("%s", password);
+    printf("enter username: ");
+    scanf("%s", uname);
+    printf("enter password: ");
+    scanf("%s", pass);
 
-    for (int i = 0; i < user_count; i++)
+    for (int i = 0; i < c; i++)
     {
-        if (strcmp(users[i].username, username) == 0 && strcmp(users[i].password, password) == 0)
+        if (strcmp(u[i].uname, uname) == 0 && strcmp(u[i].pass, pass) == 0)
         {
-            printf("Login successful. Welcome, %s.\n", username);
-            printf("Your balance is $%.2f\n\n", users[i].balance);
-            
-            printf("1. Play\n");
-            printf("2. Return to Menu\n");
-            printf("Choose an option: ");
+            printf("logged in! welcome, %s.\n", uname);
+            printf("balance: $%.2f\n\n", u[i].balance);
+
+            printf("1. play game\n");
+            printf("2. menu\n");
+            printf("choose: ");
             scanf("%d", &choice);
-            
-            if (choice == 1) {
-                return i; // return index to play game
-            } else {
+
+            if (choice == 1)
+            {
+                return i; // return user idx to play
+            }
+            else
+            {
                 return -1; // return to menu
             }
         }
     }
 
-    printf("Invalid username or password.\n");
-    return -1; 
+    printf("invalid login.\n");
+    return -1; // login fail
 }
 
-float generate_random_multiplier()
+float gen_mult()
 {
-    float random_value = (float)rand() / (float)RAND_MAX; // uniform(0,1)
-
-    if (random_value == 0)
+    float rand_val = (float)rand() / (float)RAND_MAX; // uniform(0,1)
+    if (rand_val == 0)
     {
-        random_value = 0.0001; 
+        rand_val = 0.0001; 
     }
-
-    return 1.0 / random_value; 
+    return 1.0 / rand_val; 
 }
 
-void play_game(User *user)
+void chat_resp()
 {
-    while (1) {
-        float bet, cash_out_multiplier;
-        float current_multiplier = 1.0;
+    const char *msgs[] = {
+        "good luck!",
+        "hope for big multipliers!",
+        "timing is key!",
+        "go big or go home!",
+        "don't cash out too late!",
+        "you got this!",
+        "good vibes, let's win!",
+        "let's crush it!",
+        "cash out wisely!"
+    };
+
+    int idx = rand() % (sizeof(msgs) / sizeof(msgs[0]));
+    printf("chatbot: %s\n", msgs[idx]);
+}
+
+void show_guide()
+{
+    printf("\n--- game guide ---\n");
+    printf("this is a crash betting game. place your bet, set a multiplier goal, and cash out before the multiplier crashes.\n");
+    printf("if you cash out before the crash, you win. if the multiplier crashes before you cash out, you lose.\n");
+    printf("play responsibly!\n\n");
+}
+
+void show_strat()
+{
+    int choice;
+    printf("\n--- choose a strategy ---\n");
+    printf("1. low-risk, steady wins (early cash-out)\n");
+    printf("2. high-risk, high-reward (late cash-out)\n");
+    printf("3. martingale (double bets after losses)\n");
+    printf("pick a strat (1-3): ");
+    scanf("%d", &choice);
+
+    switch (choice)
+    {
+    case 1:
+        printf("\nlow-risk strategy (early cash-out)\n");
+        break;
+    case 2:
+        printf("\nhigh-risk strategy (late cash-out)\n");
+        break;
+    case 3:
+        printf("\nmartingale strategy\n");
+        break;
+    default:
+        printf("invalid choice.\n");
+        break;
+    }
+}
+
+void play_game(User *u)
+{
+    while (1)
+    {
+        float bet, cash_out;
+        float mult = 1.0;
         float crash_point;
         clock_t start, current;
         int choice;
-        int cashed_out = 0;  // flag to track if player cashed out successfully
+        int cashed_out = 0;
 
-        printf("Your current balance is: $%.2f\n", user->balance);
+        printf("your balance: $%.2f\n", u->balance);
 
-        printf("Enter your bet amount: ");
+        printf("enter bet amount: ");
         scanf("%f", &bet);
 
-        if (bet > user->balance)
+        if (bet > u->balance)
         {
-            printf("You do not have enough balance to place this bet.\n");
+            printf("not enough balance.\n");
             return;
         }
 
-        printf("Enter desired multiplier: ");
-        scanf("%f", &cash_out_multiplier);
+        printf("enter cash-out multiplier: ");
+        scanf("%f", &cash_out);
 
-        crash_point = generate_random_multiplier();
-        //printf("The crash point is set at: %.2f\n", crash_point);
+        crash_point = gen_mult();
+        chat_resp(); // pre-game chat
 
         start = clock();
-        while (current_multiplier < crash_point)
+        while (mult < crash_point)
         {
-            printf("Current multiplier: %.2f\n", current_multiplier);
-            
-            // check if player's multiplier is reached before crash
-            if (current_multiplier >= cash_out_multiplier) {
-                cashed_out = 1;  // player successfully cashed out
+            printf("multiplier: %.2f\n", mult);
+            if (mult >= cash_out)
+            {
+                cashed_out = 1; // cashed out
                 break;
             }
-            
+
             current = clock();
-            while ((double)(clock() - current) / CLOCKS_PER_SEC < 1.0) {
+            while ((double)(clock() - current) / CLOCKS_PER_SEC < 1.0)
+            {
             }
-            
-            current_multiplier += 0.1;
+
+            mult += 0.1;
         }
 
-        printf("The multiplier crashed at %.2f.\n", crash_point);
+        printf("crashed at %.2f.\n", crash_point);
 
         if (cashed_out)
         {
-            // player cashed out in time
-            float winnings = (bet * cash_out_multiplier) - bet;
-            user->balance += winnings;
-            user->total_earnings += winnings;
-            printf("You cashed out at %.2f and won $%.2f. Your new balance is $%.2f\n", 
-                   cash_out_multiplier, winnings, user->balance);
+            float winnings = (bet * cash_out) - bet;
+            u->balance += winnings;
+            u->earnings += winnings;
+            printf("cashed out at %.2f. won $%.2f. new balance: $%.2f\n", 
+                   cash_out, winnings, u->balance);
         }
         else
         {
-            // player didn't cash out in time
-            user->balance -= bet;
-            user->total_losses += bet;
-            printf("You lost your bet of $%.2f. Your new balance is $%.2f\n", 
-                   bet, user->balance);
+            u->balance -= bet;
+            u->losses += bet;
+            printf("lost $%.2f. new balance: $%.2f\n", 
+                   bet, u->balance);
         }
 
-        printf("\n1. Continue?\n");
-        printf("2. Return to menu\n");
-        printf("Choose an option: ");
+        chat_resp(); // post-game chat
+
+        printf("\n1. continue?\n");
+        printf("2. return to menu\n");
+        printf("choose: ");
         scanf("%d", &choice);
 
-        if (choice != 1) {
+        if (choice != 1)
+        {
             return;
         }
     }
 }
 
-void save_users(User *users, int user_count)
+void save_usr(User *u, int c)
 {
-    FILE *file = fopen("users.dat", "wb");
-    if (file == NULL)
+    FILE *f = fopen("users.dat", "wb");
+    if (f == NULL)
     {
-        printf("Error saving user data.\n");
+        printf("save error.\n");
         return;
     }
-    fwrite(users, sizeof(User), user_count, file);
-    fclose(file);
-    printf("User  data saved successfully.\n");
+    fwrite(u, sizeof(User), c, f);
+    fclose(f);
+    printf("user data saved.\n");
 }
 
-int load_users(User *users)
+int load_usr(User *u)
 {
-    FILE *file = fopen("users.dat", "rb");
-    if (file == NULL)
+    FILE *f = fopen("users.dat", "rb");
+    if (f == NULL)
     {
-        return 0; // no users found, start with 0
+        return 0; // no users found
     }
-    int user_count = fread(users, sizeof(User), MAX_USERS, file);
-    fclose(file);
-    printf("Loaded %d users from file.\n", user_count);
-    return user_count;
+    int c = fread(u, sizeof(User), MAX_USERS, f);
+    fclose(f);
+    printf("loaded %d users.\n", c);
+    return c;
 }
